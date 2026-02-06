@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MindBranches</title>
+  <!--
+    Powered by markmap (https://github.com/markmap/markmap)
+    MIT License - Copyright (c) 2020 Gerald
+  -->
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <!-- Open Graph meta tags for link previews -->
+  <meta property="og:title" content="MindBranches" />
+  <meta property="og:description" content="Paste a markdown summary to create interactive MindBranches. Use any LLM to summarize books, documents, or text, then visualize it as a mindmap." />
+  <meta property="og:image" content="https://teamonics.github.io/mindbranches/logo.svg" />
+  <meta property="og:url" content="https://teamonics.github.io/mindbranches/" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@MindBranches" />
+  <meta name="twitter:title" content="MindBranches" />
+  <meta name="twitter:description" content="Paste a markdown summary to create interactive MindBranches. Use any LLM to summarize books, documents, or text, then visualize it as a mindmap." />
+  <meta name="twitter:image" content="https://teamonics.github.io/mindbranches/logo.svg" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+      min-height: 100vh;
+      background: #f0f0f3;
+      color: #333;
+      overflow-y: auto;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 10px 24px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-logo { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { font-size: 0.8rem; opacity: 0.55; margin-top: 2px; }
+
+    .page-wrap {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Editor card */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 8px 14px;
+      background: #f4f4f5;
+      border-bottom: 1px solid #e4e4e7;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #555;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .panel-header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 4px 10px;
+      background: #e4e4e7;
+      color: #333;
+      border: 1px solid #d4d4d8;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .action-btn:hover { background: #d4d4d8; }
+    .action-btn.active { background: #4361ee; color: #fff; border-color: #4361ee; }
+    .action-btn.danger { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+    .action-btn.danger:hover { background: #fca5a5; }
+
+    #markdown-input {
+      padding: 14px 16px;
+      border: none;
+      outline: none;
+      resize: vertical;
+      font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      tab-size: 2;
+      background: #fafafa;
+      color: #24292e;
+      min-height: 200px;
+    }
+
+    /* Mindmap card */
+    .mindmap-card {
+      position: relative;
+      min-height: 500px;
+    }
+
+    .mindmap-wrap {
+      position: relative;
+      height: 500px;
+    }
+
+    #mindmap {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Toolbar positioning */
+    .mm-toolbar {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+    }
+
+    /* Loading state */
+    .loading-msg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #999;
+      font-size: 0.9rem;
+    }
+
+    .loading-msg.hidden { display: none; }
+
+    /* Desktop: side-by-side */
+    @media (min-width: 900px) {
+      .page-wrap {
+        flex-direction: row;
+        padding: 20px;
+        gap: 20px;
+        height: calc(100vh - 56px);
+      }
+
+      .card.editor-card {
+        width: 40%;
+        min-width: 320px;
+      }
+
+      .card.mindmap-card {
+        flex: 1;
+      }
+
+      .page-wrap {
+        overflow: hidden;
+      }
+
+      #markdown-input {
+        flex: 1;
+        resize: none;
+      }
+
+      .mindmap-wrap {
+        flex: 1;
+        height: auto;
+      }
+
+      .card {
+        overflow: hidden;
+      }
+    }
+
+    /* Mobile: stacked */
+    @media (max-width: 899px) {
+      .page-wrap { padding: 12px; gap: 12px; }
+      #markdown-input { min-height: 250px; }
+      .mindmap-wrap { height: 400px; }
+    }
+
+    /* Footer */
+    footer {
+      padding: 14px 20px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #888;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .follow-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      background: #000;
+      color: #fff;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+
+    .follow-btn:hover { background: #333; }
+    .follow-btn svg { width: 14px; height: 14px; fill: #fff; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logo.svg" alt="MindBranches logo" class="header-logo" />
+    <div>
+      <h1>MindBranches</h1>
+      <p>Paste a markdown summary to create MindBranches</p>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+    <!-- Editor card -->
+    <div class="card editor-card">
+      <div class="panel-header">
+        <span>Markdown</span>
+        <div class="panel-header-actions">
+          <button class="action-btn" id="wrap-btn" title="Toggle maxWidth: 300 frontmatter to wrap long text">Wrap Text</button>
+          <button class="action-btn danger" id="clear-btn" title="Clear all markdown text">Clear</button>
+        </div>
+      </div>
+      <textarea id="markdown-input" spellcheck="false">
+# MindBranches Guide
+
+## Step 1: Pick Your Source
+- **Any book** you want summarized
+- **A document** like a report, article, or paper
+- **Pasted text** from a webpage, PDF, or notes
+
+## Step 2: Open Any LLM
+- **Claude** at claude.ai
+- **ChatGPT** at chatgpt.com
+- **Gemini** at gemini.google.com
+
+## Step 3: Copy and Paste This Prompt
+- Send the following prompt along with your source material:
+  - [attach/paste/reference source material] Provide a concise categorized summary of this. Output final summary as markdown code using #, ## or - before each list element and title it "Summary of Title by Author".  Bold titles and subtitles. Output as markdown code. Do not use letters or numbers in front of list elements. Output as code only.
+
+## Step 4: Copy the LLM Output
+- The LLM will return formatted markdown
+- **Select all** of the markdown code output
+- **Copy** it to your clipboard
+
+## Step 5: Paste It Here
+- Click **Clear** above to empty this text box
+- **Paste** the copied markdown into this section
+- Your MindBranch will render automatically
+- Edit your summary directly in this box
+  - Wrap a word with ** for **bold**
+  - Wrap a word with * for *italics*
+
+## Tools Available
+- **Wrap Text** limits node width for long text
+- **Fit** centers and fits the MindBranch to view
+- **+** and **-** zoom in and out
+- **Download SVG** saves your MindBranch as an image file
+  - NOTE: CLICK FIT PRIOR TO DOWNLOADING SVG
+</textarea>
+    </div>
+
+    <!-- Mindmap card -->
+    <div class="card mindmap-card">
+      <div class="panel-header">
+        <span>MindBranch</span>
+        <div class="panel-header-actions">
+          <button class="action-btn" id="fit-btn" title="Fit to view">Fit</button>
+          <button class="action-btn" id="zoom-in-btn" title="Zoom in">+</button>
+          <button class="action-btn" id="zoom-out-btn" title="Zoom out">&minus;</button>
+          <button class="action-btn" id="download-btn" title="Download as SVG">Download SVG</button>
+        </div>
+      </div>
+      <div class="mindmap-wrap">
+        <div class="loading-msg" id="loading-msg">Loading MindBranches...</div>
+        <svg id="mindmap"></svg>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <a class="follow-btn" href="https://www.x.com/MindBranches" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Follow @MindBranches on X</a>
+    <span>&copy; 2026 Teamonics LLC. All rights reserved.</span>
+  </footer>
+
+  <!-- Load markmap dependencies from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18/dist/browser/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.18/dist/browser/index.iife.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.18/dist/style.css" />
+
+  <script>
+    (function () {
+      var loadingMsg = document.getElementById('loading-msg');
+
+      // Verify libraries loaded
+      if (!window.markmap || !window.markmap.Transformer || !window.markmap.Markmap) {
+        loadingMsg.textContent = 'Failed to load MindBranches. Please refresh.';
+        return;
+      }
+      loadingMsg.classList.add('hidden');
+
+      var Transformer = markmap.Transformer;
+      var Markmap = markmap.Markmap;
+      var deriveOptions = markmap.deriveOptions;
+
+      var textarea = document.getElementById('markdown-input');
+      var svgEl = document.getElementById('mindmap');
+
+      // Create the transformer (markdown -> tree data)
+      var transformer = new Transformer();
+
+      // Create the markmap instance
+      var mm = Markmap.create(svgEl, { duration: 300 });
+
+      // --- Toolbar buttons ---
+      document.getElementById('fit-btn').addEventListener('click', function () {
+        mm.fit();
+      });
+      document.getElementById('zoom-in-btn').addEventListener('click', function () {
+        mm.rescale(1.25);
+      });
+      document.getElementById('zoom-out-btn').addEventListener('click', function () {
+        mm.rescale(0.8);
+      });
+
+      // --- Download SVG ---
+      document.getElementById('download-btn').addEventListener('click', function () {
+        var svgNode = svgEl.cloneNode(true);
+        // Include markmap's global CSS so the downloaded file looks right
+        var globalCSS = markmap.globalCSS || '';
+        if (globalCSS) {
+          var styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+          styleEl.textContent = globalCSS;
+          svgNode.insertBefore(styleEl, svgNode.firstChild);
+        }
+        svgNode.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        var blob = new Blob([new XMLSerializer().serializeToString(svgNode)], { type: 'image/svg+xml' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'mindbranches.svg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      // --- Clear button ---
+      document.getElementById('clear-btn').addEventListener('click', function () {
+        textarea.value = '';
+        renderMarkmap();
+      });
+
+      // --- Wrap Text button (toggle maxWidth frontmatter) ---
+      var wrapBtn = document.getElementById('wrap-btn');
+      var wrapActive = false;
+
+      // Check if frontmatter already has maxWidth
+      function hasMaxWidth(text) {
+        var match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+        if (!match) return false;
+        return /maxWidth\s*:/.test(match[1]);
+      }
+
+      function updateWrapState() {
+        wrapActive = hasMaxWidth(textarea.value);
+        wrapBtn.classList.toggle('active', wrapActive);
+      }
+
+      wrapBtn.addEventListener('click', function () {
+        var text = textarea.value;
+        var fmRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
+        var fmMatch = text.match(fmRegex);
+
+        if (wrapActive) {
+          // Remove maxWidth from existing frontmatter
+          if (fmMatch) {
+            var body = fmMatch[1];
+            // Remove the maxWidth line
+            body = body.replace(/^\s*maxWidth\s*:\s*\d+\s*$/m, '').trim();
+            // Remove the markmap: key if it's now empty
+            body = body.replace(/^\s*markmap:\s*\n?\s*$/m, '').trim();
+            if (body) {
+              textarea.value = '---\n' + body + '\n---\n' + text.slice(fmMatch[0].length);
+            } else {
+              textarea.value = text.slice(fmMatch[0].length);
+            }
+          }
+        } else {
+          // Add maxWidth frontmatter
+          if (fmMatch) {
+            var body = fmMatch[1];
+            if (/markmap\s*:/.test(body)) {
+              // Add maxWidth under existing markmap: key
+              body = body.replace(/(markmap\s*:)/, '$1\n  maxWidth: 300');
+            } else {
+              body = body + '\nmarkmap:\n  maxWidth: 300';
+            }
+            textarea.value = '---\n' + body + '\n---\n' + text.slice(fmMatch[0].length);
+          } else {
+            textarea.value = '---\nmarkmap:\n  maxWidth: 300\n---\n' + text;
+          }
+        }
+
+        updateWrapState();
+        renderMarkmap();
+      });
+
+      // --- Render function ---
+      var enabledFeatures = {};
+
+      function renderMarkmap() {
+        var md = textarea.value;
+        var result = transformer.transform(md);
+        var root = result.root;
+        var frontmatter = result.frontmatter;
+
+        // Load extra assets for features (code highlighting, math, etc.)
+        var keys = Object.keys(result.features).filter(function (k) { return !enabledFeatures[k]; });
+        if (keys.length) {
+          keys.forEach(function (k) { enabledFeatures[k] = true; });
+          var assets = transformer.getAssets(keys);
+          if (assets.styles) markmap.loadCSS(assets.styles);
+          if (assets.scripts) markmap.loadJS(assets.scripts);
+        }
+
+        // Apply frontmatter markmap options (like maxWidth)
+        var markmapOptions = frontmatter && frontmatter.markmap ? frontmatter.markmap : undefined;
+        var options = deriveOptions(markmapOptions);
+        mm.setData(root, options);
+        mm.fit();
+
+        updateWrapState();
+      }
+
+      // Debounce auto-render while typing
+      var timer;
+      textarea.addEventListener('input', function () {
+        clearTimeout(timer);
+        timer = setTimeout(renderMarkmap, 300);
+      });
+
+      // Initial render
+      renderMarkmap();
+    })();
+  </script>
+
+</body>
+</html>

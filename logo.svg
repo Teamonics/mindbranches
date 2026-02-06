@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <circle cx="100" cy="100" r="98" fill="#fff" stroke="#eee" stroke-width="1"/>
+  <circle cx="68" cy="100" r="5" fill="#00c8f0"/>
+  <!-- Main trunk -->
+  <line x1="0" y1="100" x2="68" y2="100" stroke="#00c8f0" stroke-width="6" stroke-linecap="round"/>
+  <!-- Upper branches -->
+  <path d="M68 100 Q90 100 100 72 Q110 55 130 55" fill="none" stroke="#8bc34a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 55 Q145 55 160 48" fill="none" stroke="#8bc34a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 55 Q145 55 160 55" fill="none" stroke="#cddc39" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 55 Q145 55 160 62" fill="none" stroke="#4caf50" stroke-width="3" stroke-linecap="round"/>
+  <path d="M68 100 Q90 100 105 82 Q115 70 130 75" fill="none" stroke="#2196f3" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 75 Q145 75 160 68" fill="none" stroke="#03a9f4" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 75 Q145 75 160 75" fill="none" stroke="#2196f3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 75 Q145 75 160 82" fill="none" stroke="#1565c0" stroke-width="3" stroke-linecap="round"/>
+  <path d="M68 100 Q85 100 95 90 Q105 82 130 88" fill="none" stroke="#9c27b0" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 88 Q145 88 160 85" fill="none" stroke="#9c27b0" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 88 Q145 88 160 92" fill="none" stroke="#7b1fa2" stroke-width="3" stroke-linecap="round"/>
+  <!-- Lower branches -->
+  <path d="M68 100 Q85 100 95 112 Q105 122 130 118" fill="none" stroke="#ff9800" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 118 Q145 118 160 112" fill="none" stroke="#ff9800" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 118 Q145 118 160 118" fill="none" stroke="#f57c00" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 118 Q145 118 160 124" fill="none" stroke="#e65100" stroke-width="3" stroke-linecap="round"/>
+  <path d="M68 100 Q90 100 100 128 Q110 145 130 140" fill="none" stroke="#795548" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 140 Q145 140 160 134" fill="none" stroke="#795548" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 140 Q145 140 160 140" fill="none" stroke="#8d6e63" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 140 Q145 140 160 146" fill="none" stroke="#5d4037" stroke-width="3" stroke-linecap="round"/>
+  <path d="M68 100 Q90 100 105 135 Q115 150 130 155" fill="none" stroke="#f44336" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 155 Q145 155 160 150" fill="none" stroke="#f44336" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 155 Q145 155 160 155" fill="none" stroke="#e91e63" stroke-width="3" stroke-linecap="round"/>
+  <path d="M130 155 Q145 155 160 162" fill="none" stroke="#ff5722" stroke-width="3" stroke-linecap="round"/>
+</svg>
