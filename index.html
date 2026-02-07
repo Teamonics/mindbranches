@@ -361,6 +361,18 @@
           svgNode.insertBefore(styleEl, svgNode.firstChild);
         }
         svgNode.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        // Set large default dimensions so the SVG opens at high resolution
+        // while preserving the viewBox for proper scaling
+        var vb = svgEl.getAttribute('viewBox');
+        if (vb) {
+          svgNode.setAttribute('viewBox', vb);
+          var parts = vb.split(/\s+/);
+          var aspect = parseFloat(parts[2]) / parseFloat(parts[3]);
+          var exportWidth = 3840;
+          var exportHeight = Math.round(exportWidth / aspect);
+          svgNode.setAttribute('width', exportWidth);
+          svgNode.setAttribute('height', exportHeight);
+        }
         var blob = new Blob([new XMLSerializer().serializeToString(svgNode)], { type: 'image/svg+xml' });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
