@@ -243,6 +243,7 @@
       <div class="panel-header">
         <span>Markdown</span>
         <div class="panel-header-actions">
+          <button class="action-btn" id="copy-prompt-btn" title="Copy the summary prompt to your clipboard">Copy Prompt</button>
           <button class="action-btn" id="wrap-btn" title="Toggle maxWidth: 300 frontmatter to wrap long text">Wrap Text</button>
           <button class="action-btn danger" id="clear-btn" title="Clear all markdown text">Clear</button>
         </div>
@@ -382,6 +383,21 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+      });
+
+      // --- Copy Prompt button ---
+      var summaryPrompt = '[attach/paste/reference source material] Provide a concise categorized summary of this. Output final summary as markdown code using #, ## or - before each list element and title it "Summary of Title by Author".  Bold titles and subtitles. Output as markdown code. Do not use letters or numbers in front of list elements. Output as code only.';
+      var copyPromptBtn = document.getElementById('copy-prompt-btn');
+
+      copyPromptBtn.addEventListener('click', function () {
+        navigator.clipboard.writeText(summaryPrompt).then(function () {
+          copyPromptBtn.textContent = 'Copied!';
+          copyPromptBtn.classList.add('active');
+          setTimeout(function () {
+            copyPromptBtn.textContent = 'Copy Prompt';
+            copyPromptBtn.classList.remove('active');
+          }, 1500);
+        });
       });
 
       // --- Clear button ---
