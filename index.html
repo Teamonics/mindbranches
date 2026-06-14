@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MindBranches — markdown mind maps</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --border: #d9dee5;
+    --accent: #2f855a;
+    --accent-dark: #276749;
+    --text: #1a202c;
+    --muted: #4a5568;
+    --title: #000000;
+    --map-bg: #ffffff;
+  }
+  html.dark {
+    --bg: #0e1116;
+    --panel: #171b21;
+    --border: #2c333d;
+    --text: #e6e9ee;
+    --muted: #9aa4b2;
+    --title: #ffffff;
+    --map-bg: #000000;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 15px/1.4 system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 18px; margin: 0; color: var(--title); display: flex; align-items: center; gap: 8px; }
+  header h1 svg { flex: none; }
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .controls label { font-size: 13px; color: var(--muted); }
+  select, button {
+    font: inherit;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button.primary { background: #f6871f; border-color: #f6871f; color: #fff; }
+  button.primary:hover { background: #d96f12; }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  #status { flex-basis: 100%; font-size: 13px; color: var(--muted); min-height: 1.2em; }
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) 2fr;
+    gap: 14px;
+    /* side gutters give touch users somewhere to grab when scrolling */
+    padding: 12px 28px 16px;
+    min-height: 0;
+  }
+  #editor {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    resize: none;
+    outline: none;
+    padding: 14px;
+    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: var(--panel);
+    color: var(--text);
+  }
+  #mindmap {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: var(--map-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr; }
+  }
+</style>
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/markmap-lib.js"></script>
+<script src="vendor/markmap-view.js"></script>
+<script src="vendor/html-to-image.js"></script>
+</head>
+<body>
+<header>
+  <h1>
+    <svg viewBox="0 0 100 100" width="30" height="30" aria-hidden="true">
+      <defs><clipPath id="logo-clip"><circle cx="50" cy="50" r="50" /></clipPath></defs>
+      <g clip-path="url(#logo-clip)" fill="none" stroke-width="2.25" stroke-linecap="round">
+        <path d="M24,17 C36,17 36,5 48,5 H104" stroke="#f6871f" />
+        <path d="M24,17 C33,17 33,13 42,13 H104" stroke="#43a047" />
+        <path d="M24,17 C33,17 33,21 42,21 H104" stroke="#d0342c" />
+        <path d="M24,17 C36,17 36,29 48,29 H104" stroke="#b9bf2c" />
+        <path d="M22,83 C34,83 34,71 46,71 H104" stroke="#7a5547" />
+        <path d="M22,83 C31,83 31,79 40,79 H104" stroke="#43a047" />
+        <path d="M22,83 C31,83 31,87 40,87 H104" stroke="#d0342c" />
+        <path d="M22,83 C34,83 34,95 46,95 H104" stroke="#b9bf2c" />
+        <path d="M-4,50 H36" stroke="#35bdc9" />
+        <path d="M42,50 C54,50 54,34 66,34 H104" stroke="#3178b5" />
+        <path d="M42,50 C52,50 52,42 62,42 H104" stroke="#f6871f" />
+        <path d="M42,50 H104" stroke="#43a047" />
+        <path d="M42,50 C52,50 52,58 62,58 H104" stroke="#d0342c" />
+        <path d="M42,50 C54,50 54,66 66,66 H104" stroke="#9c64c3" />
+        <circle cx="39" cy="50" r="5" fill="#35bdc9" stroke="none" />
+        <circle cx="39" cy="50" r="2.2" fill="#fff" stroke="none" />
+      </g>
+    </svg>
+    MindBranches
+  </h1>
+  <div class="controls">
+    <label>Theme
+      <select id="mode">
+        <option value="light" selected>Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </label>
+    <button id="refresh" title="Restore the app to its original state">Refresh</button>
+    <button id="clear" title="Delete all markdown text">Clear</button>
+    <button id="wrap" title="Wrap long node text at 300px (inserts markmap settings at the top of your markdown)">Wrap text</button>
+    <button id="fit" title="Fit the whole map in view">Fit</button>
+    <button id="export-html" title="Download a standalone interactive HTML file">Save HTML</button>
+    <button id="export-svg" title="Download the full map as a vector SVG file">Save SVG</button>
+    <button id="export-png" class="primary" title="Download the full map as a high-resolution PNG">Save PNG</button>
+    <label>Scale
+      <select id="scale">
+        <option value="2">2×</option>
+        <option value="4" selected>4×</option>
+        <option value="6">6×</option>
+        <option value="8">8×</option>
+      </select>
+    </label>
+  </div>
+  <span id="status"></span>
+</header>
+<main>
+  <textarea id="editor" spellcheck="false" placeholder="Paste your markdown here…"></textarea>
+  <svg id="mindmap"></svg>
+</main>
+<script>
+(function () {
+  'use strict';
+  const { Transformer, Markmap, deriveOptions, loadCSS, loadJS } = window.markmap;
+  const editor = document.getElementById('editor');
+  const svgEl = document.getElementById('mindmap');
+  const statusEl = document.getElementById('status');
+  const scaleSel = document.getElementById('scale');
+  const modeSel = document.getElementById('mode');
+  const pngBtn = document.getElementById('export-png');
+  const htmlBtn = document.getElementById('export-html');
+
+  const STORAGE_KEY = 'mindbranches-md';
+  const MODE_KEY = 'mindbranches-mode';
+  // markmap's own dark-theme variables (mirrors its .markmap-dark stylesheet rule);
+  // applied inline on the SVG so they survive cloning during PNG/SVG export
+  const DARK_VARS = {
+    '--markmap-code-bg': '#1a1b26',
+    '--markmap-code-color': '#ddd',
+    '--markmap-circle-open-bg': '#444',
+    '--markmap-text-color': '#eee',
+  };
+
+  function isDark() {
+    return modeSel.value === 'dark';
+  }
+
+  function exportBg() {
+    return isDark() ? '#000000' : '#ffffff';
+  }
+
+  function applyMode() {
+    const dark = isDark();
+    document.documentElement.classList.toggle('dark', dark);
+    Object.keys(DARK_VARS).forEach((k) => {
+      if (dark) svgEl.style.setProperty(k, DARK_VARS[k]);
+      else svgEl.style.removeProperty(k);
+    });
+    localStorage.setItem(MODE_KEY, modeSel.value);
+  }
+  const SAMPLE = `# MindBranches
+
+## Getting started
+- Paste **markdown** in this pane
+- The map updates as you type
+- Click a circle to fold/unfold a branch
+
+## Navigation
+- Scroll to pan, \`Ctrl\`/\`Cmd\` + scroll to zoom
+- **Fit** brings the whole map back into view
+
+## Saving
+- **Save PNG** exports the *entire* map at 2–8× resolution
+- **Save SVG** and **Save HTML** for vector and interactive files
+- Your text is autosaved in this browser
+
+## Markdown tips
+- Headings become branches
+- Nested lists become twigs
+- Links work: [Visit @MindBranches on X](https://x.com/MindBranches)
+- So does \`inline code\` and **emphasis**
+
+`;
+
+  const transformer = new Transformer();
+  let mm = null;
+
+  function setStatus(msg) {
+    statusEl.textContent = msg || '';
+  }
+
+  function debounce(fn, ms) {
+    let t;
+    return () => {
+      clearTimeout(t);
+      t = setTimeout(fn, ms);
+    };
+  }
+
+  function render() {
+    const { root, features, frontmatter } = transformer.transform(editor.value);
+    const { styles, scripts } = transformer.getUsedAssets(features);
+    if (styles) loadCSS(styles);
+    if (scripts) loadJS(scripts, { getMarkmap: () => window.markmap });
+    // maxWidth: 0 resets wrapping when the frontmatter block is removed
+    const opts = { maxWidth: 0, ...deriveOptions(frontmatter && frontmatter.markmap) };
+    if (!mm) {
+      mm = Markmap.create(svgEl, opts, root);
+      return Promise.resolve();
+    }
+    return mm.setData(root, opts);
+  }
+
+  function firstHeading() {
+    const m = editor.value.match(/^#{1,6}\s+(.+)$/m);
+    const raw = (m ? m[1] : 'mindmap').trim();
+    return raw.replace(/[^\wÀ-￿-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'mindmap';
+  }
+
+  function download(href, filename) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    a.click();
+  }
+
+  // Temporarily frame the entire tree at natural size; returns null when the map is empty.
+  function frameFullMap() {
+    const { x1, y1, x2, y2 } = mm.state.rect;
+    if (x2 - x1 <= 0 || y2 - y1 <= 0) return null;
+    const PAD = 16;
+    const width = Math.ceil(x2 - x1 + PAD * 2);
+    const height = Math.ceil(y2 - y1 + PAD * 2);
+    const prevWidth = svgEl.style.width;
+    const prevHeight = svgEl.style.height;
+    const prevTransform = d3.zoomTransform(svgEl);
+    svgEl.style.width = width + 'px';
+    svgEl.style.height = height + 'px';
+    mm.svg.call(mm.zoom.transform, d3.zoomIdentity.translate(PAD - x1, PAD - y1));
+    return {
+      width,
+      height,
+      restore() {
+        svgEl.style.width = prevWidth;
+        svgEl.style.height = prevHeight;
+        mm.svg.call(mm.zoom.transform, prevTransform);
+      },
+    };
+  }
+
+  async function exportPng() {
+    const frame = frameFullMap();
+    if (!frame) {
+      setStatus('Nothing to export yet');
+      return;
+    }
+    const scale = +scaleSel.value;
+    pngBtn.disabled = true;
+    setStatus('Rendering PNG…');
+    try {
+      const options = {
+        width: frame.width,
+        height: frame.height,
+        pixelRatio: scale,
+        backgroundColor: exportBg(),
+      };
+      // Safari renders the first toPng of an SVG with foreignObject blank; warm up.
+      if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
+        await htmlToImage.toPng(svgEl, options);
+        await htmlToImage.toPng(svgEl, options);
+      }
+      const dataUrl = await htmlToImage.toPng(svgEl, options);
+      download(dataUrl, firstHeading() + '.png');
+      setStatus('Saved ' + frame.width * scale + '×' + frame.height * scale + ' px');
+    } catch (err) {
+      console.error(err);
+      setStatus('Export failed — try a smaller scale');
+    } finally {
+      frame.restore();
+      pngBtn.disabled = false;
+    }
+  }
+
+  function exportSvg() {
+    const frame = frameFullMap();
+    if (!frame) {
+      setStatus('Nothing to export yet');
+      return;
+    }
+    try {
+      const clone = svgEl.cloneNode(true);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+      clone.setAttribute('width', frame.width);
+      clone.setAttribute('height', frame.height);
+      clone.setAttribute('viewBox', '0 0 ' + frame.width + ' ' + frame.height);
+      clone.removeAttribute('style');
+      if (isDark()) {
+        Object.keys(DARK_VARS).forEach((k) => clone.style.setProperty(k, DARK_VARS[k]));
+      }
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('width', '100%');
+      rect.setAttribute('height', '100%');
+      rect.setAttribute('fill', exportBg());
+      clone.insertBefore(rect, clone.firstChild);
+      const xml = new XMLSerializer().serializeToString(clone);
+      const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml' }));
+      download(url, firstHeading() + '.svg');
+      URL.revokeObjectURL(url);
+      setStatus('Saved SVG — best viewed in a web browser');
+    } finally {
+      frame.restore();
+    }
+  }
+
+  function exportHtml() {
+    const md = JSON.stringify(editor.value).replace(/<\//g, '<\\/');
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${firstHeading()} — MindBranches</title>
+<style>html,body{margin:0;height:100%}#mindmap{display:block;width:100vw;height:100vh}body.markmap-dark{background:#000}</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.18.8/dist/browser/index.iife.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.8/dist/browser/index.js"><\/script>
+</head>
+<body${isDark() ? ' class="markmap-dark"' : ''}>
+<svg id="mindmap"></svg>
+<script>
+const { Transformer, Markmap, deriveOptions, loadCSS, loadJS } = window.markmap;
+const transformer = new Transformer();
+const { root, features, frontmatter } = transformer.transform(${md});
+const { styles, scripts } = transformer.getUsedAssets(features);
+if (styles) loadCSS(styles);
+if (scripts) loadJS(scripts, { getMarkmap: () => window.markmap });
+Markmap.create('svg#mindmap', deriveOptions(frontmatter && frontmatter.markmap), root);
+<\/script>
+</body>
+</html>
+`;
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    download(url, firstHeading() + '.html');
+    URL.revokeObjectURL(url);
+  }
+
+  function addWrap() {
+    if (/\bmaxWidth\s*:/.test(editor.value)) {
+      setStatus('maxWidth is already set — edit the number at the top');
+      return;
+    }
+    editor.value = '---\nmarkmap:\n  maxWidth: 300\n---\n\n' + editor.value;
+    localStorage.setItem(STORAGE_KEY, editor.value);
+    render();
+    setStatus('Node text now wraps at 300px — edit the number to adjust');
+  }
+
+  editor.addEventListener('input', debounce(() => {
+    render();
+    localStorage.setItem(STORAGE_KEY, editor.value);
+  }, 300));
+  modeSel.addEventListener('change', applyMode);
+  document.getElementById('refresh').addEventListener('click', async () => {
+    if (!confirm('Restore MindBranches to its original state? Your markdown will be replaced by the sample.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(MODE_KEY);
+    modeSel.value = 'light';
+    scaleSel.value = '4';
+    applyMode();
+    editor.value = SAMPLE;
+    await render();
+    mm.fit();
+    setStatus('');
+  });
+  document.getElementById('clear').addEventListener('click', () => {
+    if (editor.value.trim() && !confirm('Delete all markdown text?')) return;
+    editor.value = '';
+    localStorage.setItem(STORAGE_KEY, '');
+    render();
+    setStatus('Cleared');
+    editor.focus();
+  });
+  document.getElementById('wrap').addEventListener('click', addWrap);
+  document.getElementById('fit').addEventListener('click', () => mm && mm.fit());
+  pngBtn.addEventListener('click', exportPng);
+  htmlBtn.addEventListener('click', exportHtml);
+  document.getElementById('export-svg').addEventListener('click', exportSvg);
+
+  modeSel.value = localStorage.getItem(MODE_KEY) === 'dark' ? 'dark' : 'light';
+  applyMode();
+  editor.value = localStorage.getItem(STORAGE_KEY) || SAMPLE;
+  render();
+})();
+</script>
+</body>
+</html>
