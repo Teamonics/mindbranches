@@ -30,6 +30,10 @@ Any static host works:
 - **GitHub Pages** — push this folder to a repo, enable Pages
 - **Anything else** — `python3 -m http.server` in this folder, Vercel, S3, …
 
-## Licenses
+## License
 
-The bundled libraries — [markmap](https://github.com/markmap/markmap) (MIT), [html-to-image](https://github.com/bubkoo/html-to-image) (MIT), and [d3](https://github.com/d3/d3) (ISC) — permit commercial use. Their full license texts are in `THIRD-PARTY-LICENSES`.
+The Teamonics MindBranches build is licensed under the [Apache License 2.0](LICENSE).
+
+This repository includes third-party open-source libraries: [markmap](https://github.com/markmap/markmap) (MIT), [html-to-image](https://github.com/bubkoo/html-to-image) (MIT), and [d3](https://github.com/d3/d3) (ISC). Their full license texts are in [`THIRD-PARTY-LICENSES`](THIRD-PARTY-LICENSES).
+
+MindBranches, Teamonics, associated logos, domain names, visual identity, and related branding are trademarks or brand assets of Teamonics LLC. The software license applies to the code only and does not grant permission to use Teamonics or MindBranches branding in a way that suggests endorsement, affiliation, sponsorship, or an official Teamonics product. See [`TRADEMARKS.md`](TRADEMARKS.md).
