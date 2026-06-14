@@ -1,4 +1,4 @@
-# 🌿 MindBranches
+# MindBranches
 
 Paste markdown, get an interactive mind map, save it as a high-resolution image. A single-file web app built on [markmap](https://markmap.js.org/).
 
