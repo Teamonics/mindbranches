@@ -46,7 +46,7 @@
   }
   header h1 { font-size: 18px; margin: 0; color: var(--title); display: flex; align-items: center; gap: 8px; }
   header h1 svg { flex: none; }
-  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-basis: 100%; }
   .controls label { font-size: 13px; color: var(--muted); }
   select, button {
     font: inherit;
@@ -135,17 +135,11 @@
     <button id="clear" title="Delete all markdown text">Clear</button>
     <button id="wrap" title="Wrap long node text at 300px (inserts markmap settings at the top of your markdown)">Wrap text</button>
     <button id="fit" title="Fit the whole map in view">Fit</button>
+  </div>
+  <div class="controls">
     <button id="export-html" title="Download a standalone interactive HTML file">Save HTML</button>
-    <button id="export-svg" title="Download the full map as a vector SVG file">Save SVG</button>
-    <button id="export-png" class="primary" title="Download the full map as a high-resolution PNG">Save PNG</button>
-    <label>Scale
-      <select id="scale">
-        <option value="2">2×</option>
-        <option value="4" selected>4×</option>
-        <option value="6">6×</option>
-        <option value="8">8×</option>
-      </select>
-    </label>
+    <button id="export-svg" title="Download the map as shown, as a vector SVG file">Save SVG</button>
+    <button id="export-png" class="primary" title="Download the map as shown, as a PNG image">Save PNG</button>
   </div>
   <span id="status"></span>
 </header>
@@ -160,7 +154,6 @@
   const editor = document.getElementById('editor');
   const svgEl = document.getElementById('mindmap');
   const statusEl = document.getElementById('status');
-  const scaleSel = document.getElementById('scale');
   const modeSel = document.getElementById('mode');
   const pngBtn = document.getElementById('export-png');
   const htmlBtn = document.getElementById('export-html');
@@ -205,8 +198,8 @@
 - **Fit** brings the whole map back into view
 
 ## Saving
-- **Save PNG** exports the *entire* map at 2–8× resolution
-- **Save SVG** and **Save HTML** for vector and interactive files
+- **Save PNG** and **Save SVG** download the map just as you see it
+- **Save HTML** downloads an interactive standalone file
 - Your text is autosaved in this browser
 
 ## Markdown tips
@@ -259,93 +252,66 @@
     a.click();
   }
 
-  // Temporarily frame the entire tree at natural size; returns null when the map is empty.
-  function frameFullMap() {
-    const { x1, y1, x2, y2 } = mm.state.rect;
-    if (x2 - x1 <= 0 || y2 - y1 <= 0) return null;
-    const PAD = 16;
-    const width = Math.ceil(x2 - x1 + PAD * 2);
-    const height = Math.ceil(y2 - y1 + PAD * 2);
-    const prevWidth = svgEl.style.width;
-    const prevHeight = svgEl.style.height;
-    const prevTransform = d3.zoomTransform(svgEl);
-    svgEl.style.width = width + 'px';
-    svgEl.style.height = height + 'px';
-    mm.svg.call(mm.zoom.transform, d3.zoomIdentity.translate(PAD - x1, PAD - y1));
-    return {
-      width,
-      height,
-      restore() {
-        svgEl.style.width = prevWidth;
-        svgEl.style.height = prevHeight;
-        mm.svg.call(mm.zoom.transform, prevTransform);
-      },
-    };
+  function withTimeout(promise, ms) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), ms)),
+    ]);
   }
 
+  // Both image exports capture the map exactly as shown in the viewing frame.
   async function exportPng() {
-    const frame = frameFullMap();
-    if (!frame) {
-      setStatus('Nothing to export yet');
-      return;
-    }
-    const scale = +scaleSel.value;
+    if (!mm) return;
+    const { width, height } = svgEl.getBoundingClientRect();
+    const ratio = Math.max(2, window.devicePixelRatio || 1);
     pngBtn.disabled = true;
     setStatus('Rendering PNG…');
     try {
       const options = {
-        width: frame.width,
-        height: frame.height,
-        pixelRatio: scale,
+        pixelRatio: ratio,
         backgroundColor: exportBg(),
       };
       // Safari renders the first toPng of an SVG with foreignObject blank; warm up.
       if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
-        await htmlToImage.toPng(svgEl, options);
-        await htmlToImage.toPng(svgEl, options);
+        await withTimeout(htmlToImage.toPng(svgEl, options), 20000);
+        await withTimeout(htmlToImage.toPng(svgEl, options), 20000);
       }
-      const dataUrl = await htmlToImage.toPng(svgEl, options);
+      const dataUrl = await withTimeout(htmlToImage.toPng(svgEl, options), 20000);
       download(dataUrl, firstHeading() + '.png');
-      setStatus('Saved ' + frame.width * scale + '×' + frame.height * scale + ' px');
+      setStatus('Saved ' + Math.round(width * ratio) + '×' + Math.round(height * ratio) + ' px');
     } catch (err) {
       console.error(err);
-      setStatus('Export failed — try a smaller scale');
+      setStatus('Export failed');
     } finally {
-      frame.restore();
       pngBtn.disabled = false;
     }
   }
 
   function exportSvg() {
-    const frame = frameFullMap();
-    if (!frame) {
-      setStatus('Nothing to export yet');
-      return;
+    if (!mm) return;
+    const { width, height } = svgEl.getBoundingClientRect();
+    const w = Math.round(width);
+    const h = Math.round(height);
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    clone.setAttribute('width', w);
+    clone.setAttribute('height', h);
+    clone.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    clone.removeAttribute('style');
+    if (isDark()) {
+      Object.keys(DARK_VARS).forEach((k) => clone.style.setProperty(k, DARK_VARS[k]));
     }
-    try {
-      const clone = svgEl.cloneNode(true);
-      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-      clone.setAttribute('width', frame.width);
-      clone.setAttribute('height', frame.height);
-      clone.setAttribute('viewBox', '0 0 ' + frame.width + ' ' + frame.height);
-      clone.removeAttribute('style');
-      if (isDark()) {
-        Object.keys(DARK_VARS).forEach((k) => clone.style.setProperty(k, DARK_VARS[k]));
-      }
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('width', '100%');
-      rect.setAttribute('height', '100%');
-      rect.setAttribute('fill', exportBg());
-      clone.insertBefore(rect, clone.firstChild);
-      const xml = new XMLSerializer().serializeToString(clone);
-      const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml' }));
-      download(url, firstHeading() + '.svg');
-      URL.revokeObjectURL(url);
-      setStatus('Saved SVG — best viewed in a web browser');
-    } finally {
-      frame.restore();
-    }
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', '100%');
+    rect.setAttribute('height', '100%');
+    rect.setAttribute('fill', exportBg());
+    clone.insertBefore(rect, clone.firstChild);
+    const xml = new XMLSerializer().serializeToString(clone);
+    const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml' }));
+    download(url, firstHeading() + '.svg');
+    URL.revokeObjectURL(url);
+    setStatus('Saved SVG — best viewed in a web browser');
   }
 
   function exportHtml() {
@@ -401,7 +367,6 @@ Markmap.create('svg#mindmap', deriveOptions(frontmatter && frontmatter.markmap),
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(MODE_KEY);
     modeSel.value = 'light';
-    scaleSel.value = '4';
     applyMode();
     editor.value = SAMPLE;
     await render();
