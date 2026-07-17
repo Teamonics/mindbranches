@@ -342,7 +342,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${firstHeading()} — MindBranches</title>
-<style>html{-webkit-text-size-adjust:100%;text-size-adjust:100%}html,body{margin:0;height:100%}#mindmap{display:block;width:100vw;height:100vh;--markmap-font:400 16px/20px sans-serif}body.markmap-dark{background:#000}</style>
+<style>html{-webkit-text-size-adjust:100%;text-size-adjust:100%}html,body{margin:0;height:100%}#mindmap{display:block;width:100vw;height:100vh;--markmap-font:400 20px/26px sans-serif}body.markmap-dark{background:#000}</style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.18.8/dist/browser/index.iife.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.8/dist/browser/index.js"><\/script>
@@ -411,7 +411,7 @@ Markmap.create('svg#mindmap', deriveOptions(frontmatter && frontmatter.markmap),
   // larger than the rest; use normal weight so all lines read the same size.
   // Set inline so it carries into PNG and SVG exports. Same for text-size-adjust:
   // iOS Safari otherwise inflates some node texts and not others (font boosting).
-  svgEl.style.setProperty('--markmap-font', '400 16px/20px sans-serif');
+  svgEl.style.setProperty('--markmap-font', '400 20px/26px sans-serif');
   svgEl.style.setProperty('-webkit-text-size-adjust', '100%');
   svgEl.style.setProperty('text-size-adjust', '100%');
   modeSel.value = localStorage.getItem(MODE_KEY) === 'dark' ? 'dark' : 'light';
