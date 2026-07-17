@@ -26,6 +26,8 @@
     --map-bg: #000000;
   }
   * { box-sizing: border-box; }
+  /* stop iOS Safari from selectively inflating text ("font boosting") */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   html, body { height: 100%; }
   body {
     margin: 0;
@@ -315,6 +317,11 @@
     // (text wrapping) and the dark-theme variables. Only clear layout sizing.
     clone.style.width = '';
     clone.style.height = '';
+    // iOS Safari must not inflate text when the file is viewed standalone
+    const styleNode = clone.querySelector('style');
+    if (styleNode) {
+      styleNode.textContent += '\nsvg{-webkit-text-size-adjust:100%;text-size-adjust:100%}';
+    }
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.setAttribute('width', '100%');
     rect.setAttribute('height', '100%');
@@ -335,7 +342,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${firstHeading()} — MindBranches</title>
-<style>html,body{margin:0;height:100%}#mindmap{display:block;width:100vw;height:100vh;--markmap-font:400 16px/20px sans-serif}body.markmap-dark{background:#000}</style>
+<style>html{-webkit-text-size-adjust:100%;text-size-adjust:100%}html,body{margin:0;height:100%}#mindmap{display:block;width:100vw;height:100vh;--markmap-font:400 16px/20px sans-serif}body.markmap-dark{background:#000}</style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.18.8/dist/browser/index.iife.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.8/dist/browser/index.js"><\/script>
@@ -402,8 +409,11 @@ Markmap.create('svg#mindmap', deriveOptions(frontmatter && frontmatter.markmap),
 
   // markmap's default font is light-weight (300), which makes bold lines look
   // larger than the rest; use normal weight so all lines read the same size.
-  // Set inline so it carries into PNG and SVG exports.
+  // Set inline so it carries into PNG and SVG exports. Same for text-size-adjust:
+  // iOS Safari otherwise inflates some node texts and not others (font boosting).
   svgEl.style.setProperty('--markmap-font', '400 16px/20px sans-serif');
+  svgEl.style.setProperty('-webkit-text-size-adjust', '100%');
+  svgEl.style.setProperty('text-size-adjust', '100%');
   modeSel.value = localStorage.getItem(MODE_KEY) === 'dark' ? 'dark' : 'light';
   applyMode();
   editor.value = localStorage.getItem(STORAGE_KEY) || SAMPLE;
