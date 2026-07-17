@@ -259,9 +259,21 @@
     ]);
   }
 
+  // Node boxes can hold stale sizes briefly after a wrap-width change (markmap
+  // re-measures on a debounce); force an instant re-measure/re-layout so
+  // exports never capture oversized boxes.
+  async function freshLayout() {
+    const prevDuration = mm.options.duration;
+    mm.setOptions({ duration: 0 });
+    await mm.setData();
+    await new Promise(requestAnimationFrame);
+    mm.setOptions({ duration: prevDuration });
+  }
+
   // Both image exports capture the map exactly as shown in the viewing frame.
   async function exportPng() {
     if (!mm) return;
+    await freshLayout();
     const { width, height } = svgEl.getBoundingClientRect();
     const ratio = Math.max(2, window.devicePixelRatio || 1);
     pngBtn.disabled = true;
@@ -287,8 +299,9 @@
     }
   }
 
-  function exportSvg() {
+  async function exportSvg() {
     if (!mm) return;
+    await freshLayout();
     const { width, height } = svgEl.getBoundingClientRect();
     const w = Math.round(width);
     const h = Math.round(height);
@@ -322,7 +335,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${firstHeading()} — MindBranches</title>
-<style>html,body{margin:0;height:100%}#mindmap{display:block;width:100vw;height:100vh}body.markmap-dark{background:#000}</style>
+<style>html,body{margin:0;height:100%}#mindmap{display:block;width:100vw;height:100vh;--markmap-font:400 16px/20px sans-serif}body.markmap-dark{background:#000}</style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.18.8/dist/browser/index.iife.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.8/dist/browser/index.js"><\/script>
@@ -387,6 +400,10 @@ Markmap.create('svg#mindmap', deriveOptions(frontmatter && frontmatter.markmap),
   htmlBtn.addEventListener('click', exportHtml);
   document.getElementById('export-svg').addEventListener('click', exportSvg);
 
+  // markmap's default font is light-weight (300), which makes bold lines look
+  // larger than the rest; use normal weight so all lines read the same size.
+  // Set inline so it carries into PNG and SVG exports.
+  svgEl.style.setProperty('--markmap-font', '400 16px/20px sans-serif');
   modeSel.value = localStorage.getItem(MODE_KEY) === 'dark' ? 'dark' : 'light';
   applyMode();
   editor.value = localStorage.getItem(STORAGE_KEY) || SAMPLE;
