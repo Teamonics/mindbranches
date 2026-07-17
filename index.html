@@ -298,10 +298,10 @@
     clone.setAttribute('width', w);
     clone.setAttribute('height', h);
     clone.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
-    clone.removeAttribute('style');
-    if (isDark()) {
-      Object.keys(DARK_VARS).forEach((k) => clone.style.setProperty(k, DARK_VARS[k]));
-    }
+    // Keep the inline style attribute: it carries markmap's --markmap-max-width
+    // (text wrapping) and the dark-theme variables. Only clear layout sizing.
+    clone.style.width = '';
+    clone.style.height = '';
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.setAttribute('width', '100%');
     rect.setAttribute('height', '100%');
