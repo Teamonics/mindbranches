@@ -92,7 +92,15 @@
     border-radius: 8px;
   }
   @media (max-width: 760px) {
-    main { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr; }
+    /* let the page scroll on phones so the map gets a real height instead of
+       the leftovers; svh measures the screen with Safari's toolbars showing */
+    html, body { height: auto; }
+    main {
+      grid-template-columns: 1fr;
+      grid-template-rows: 35vh 75vh;
+      grid-template-rows: 35svh 75svh;
+      padding: 12px 16px 24px;
+    }
   }
 </style>
 <script src="vendor/d3.min.js"></script>
